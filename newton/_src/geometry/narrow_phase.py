@@ -1738,7 +1738,8 @@ class NarrowPhase:
             target_blocks = device_obj.sm_count * 4 if device_obj.is_cuda else 64
             n = max_candidate_pairs + 1
             # Mesh-mesh
-            self.num_mesh_mesh_blocks = target_blocks
+            # Four waves of small chunks balance uneven per-chunk edge work (upstream #4142).
+            self.num_mesh_mesh_blocks = target_blocks * 4 if device_obj.is_cuda else target_blocks
             self.mesh_mesh_target_blocks = target_blocks
             self.mesh_mesh_block_offsets = wp.zeros(n, dtype=wp.int32, device=device)
             self.mesh_mesh_block_counts = wp.zeros(n, dtype=wp.int32, device=device)

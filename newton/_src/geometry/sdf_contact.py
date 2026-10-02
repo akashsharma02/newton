@@ -22,8 +22,9 @@ from .contact_reduction_global import GlobalContactReducerData, export_and_reduc
 # ``mesh_sdf_collision_kernel`` and ``mesh_sdf_collision_global_reduce_kernel``.
 # Both kernels assume ``wp.block_dim() == MESH_SDF_BLOCK_DIM`` so that the
 # tile-stack capacity below correctly sizes the cooperative push overflow
-# margin.
-MESH_SDF_BLOCK_DIM = 256
+# margin. 128 threads (four resident blocks per SM at the 128-register cap)
+# measured faster than 256 threads with two blocks (backport of upstream #4142).
+MESH_SDF_BLOCK_DIM = 128
 
 # Capacity of the cooperative edge-selection tile stack. Sized to
 # ``2 * MESH_SDF_BLOCK_DIM`` so that the inner push loop can never
@@ -1189,7 +1190,7 @@ def create_narrow_phase_process_mesh_mesh_contacts_kernel(
     # but contacts are written directly to global buffer + hashtable.
     # =========================================================================
 
-    @wp.kernel(enable_backward=False, launch_bounds=(256, 2), module=_module)
+    @wp.kernel(enable_backward=False, launch_bounds=(MESH_SDF_BLOCK_DIM, 4), module=_module)
     def mesh_sdf_collision_global_reduce_kernel(
         shape_data: wp.array[wp.vec4],
         shape_transform: wp.array[wp.transform],
