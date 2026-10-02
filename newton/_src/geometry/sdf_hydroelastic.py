@@ -1255,13 +1255,15 @@ def mc_iterate_voxel_vertices(
 ) -> tuple[wp.uint8, vec8f, vec8f, bool, bool]:
     """Iterate over the vertices of a voxel and return the cube index, corner values, and whether any vertices are inside the shape."""
     cube_idx = wp.uint8(0)
-    any_verts_inside_gap = False
+    any_verts_inside_gap = bool(False)
     corner_vals = vec8f()
     corner_sdf_vals = vec8f()
 
     X_a_to_b = wp.transform_multiply(wp.transform_inverse(X_ws_other), X_ws)
 
-    for i in range(8):
+    # Rolled on purpose: unrolled x8, NVRTC (sm<=90 targets) spills ~1.4 KB/thread.
+    num_corners = int(8)
+    for i in range(num_corners):
         corner_offset = wp.vec3i(corner_offsets_table[i])
         x = x_id + corner_offset.x
         y = y_id + corner_offset.y
